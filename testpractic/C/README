@@ -1,0 +1,16 @@
+Vectorul is_it_done ne spune daca cele P - 1 thread-uri s-au terminat,
+initializat cu 0 pentru ca initial toate incep sa lucreze. Dupa ce
+un thread isi termina jobul abstract acesta se marcheaza ca terminat
+in vector. Cat timp mai sunt threaduri nemarcate, thread-ul 0 continua
+verificarea.
+
+Vectorul was_already_done ne spune daca cele P - 1 thread-uri s-au terminat
+si au fost de asemenea si observate ca terminate de thread-ul 0. Daca cumva
+pentru thread-ul i valoarea de la index-ul i - 1 din vector este 0, dar in
+is_it_done este 1 inseamna ca thread-ul i si-a terminat executia recent.
+Thread-ul 0 trebuie astfel sa afiseze mesajul si sa il retina ca fiind deja
+terminat schimband valoarea din was_already_done, de la indexul respectiv,
+din 0 in 1.
+
+Vectorii is_it_done si was_already_done sunt indexati de la 0, asa ca un
+thread i are drept corespondent in vectori indexul i - 1.

@@ -1,0 +1,98 @@
+Iancu Alexandru-Gabriel 333CB
+
+1. merge sort paralel
+
+Pentru a face un algoritm de merge sort paralel a trebuit sa fac o implementare bottom-up. Am inceput
+de la varianta din laborator care nu mergea pe un numar de obiecte care nu-i putere a lui 2 si de asemenea
+nici pe un numar de elemente de procesare care nu este putere a lui 2. Rezolvasem initial problema
+cu numarul de obiecte adaugand indivizi de padding pana la urmatoarea putere a lui 2. Totusi pe varianta
+din laborator nu puteam conceptualiza o idee de a face algoritmul sa mearga pe orice numar de elemente
+de procesare. O varianta ar fi fost sa rotunjesc la cea mai mare putere a lui 2 mai mica decat numarul
+de elemente de procesare, dar asa n-ar fi scalat.
+
+O idee la care am ajuns si pe care o folosesc in varianta curenta este sa calculez dinainte o matrice
+de merge sort care contine pozitiile la care trebuie sa se faca merge. Pozitiile le calculez urmand
+aceeasi pasi pe care i-as fi facut intr-o implementare top-down recursiva ca mai apoi sa parcurg invers aceste
+pozitii pentru a realiza implementarea bottom-up. Fiecare linie din matrice reprezinta un stadiu, stadiul
+e reprezentat de pozitiile care se afla la acelasi nivel pe stiva de recursivitate in implementarea top-down.
+Spre exemplu pentru 8 obiecte, primul stadiu este cel cu apelul pe toate cele 8 obiecte, urmatorul stadiu e
+format din cele 2 apeluri de cate 4 obiecte, al treilea din cele 4 apeluri pe cate 2 obiecte. Vectorul pentru
+un stadiu va fi populat cu pozitiile aferente stadiului. Pozitiile le stochez intr-o structura MergeStruct
+ce contine pozitiile de start, middle si end. In implementarea secventiala bottom-up trebuie doar sa
+parcurg la fiecare stadiu(stagiile se parcurg de la ultimul la primul) MergeStruct-urile si apoi sa apelez
+merge pe pozitiile din acesta, la final voi obtine generatia sortata. Lungimea unui stadiu este variabila
+si este de maxim de 2 ori mai mare decat lungimea stadiului precedent, aceasta este stocata intr-un vector
+de lungimi in structura MergeSortMatrix ce contine si matricea si numarul de stagii. De mentionat este
+ca pozitiile pentru care end - start este egal cu 1 (se ocupa cu sortarea unui singur element) nu sunt
+stocate in matrice pentru ca sunt operatii redundante.
+
+Problema numarului de obiecte e rezolvata pentru ca varianta recursiva top-down merge pe orice numar
+de obiecte si astfel si implementarea simetrica bottom-up va merge, nemaifiind necesari indivizii de
+padding. Aceasta varianta rezolva si problema numarului de elemente de procesare variabil pentru ca
+MergeStruct-urile din acelasi stadiu se ocupa de sortarea unor bucati din generatie care nu se intersecteaza,
+astfel pot sa calculez start si end pentru for-ul ce parcurge MergeStruct-urile dintr-un stadiu si algoritmul
+se va scala in functie de numarul de threaduri in limita numarului de MergeStruct-uri dintr-un stadiu.
+Totusi stadiile intre ele nu sunt independente, acestea trebuind sa fie rezolvate secvential, asa ca
+la final de fiecare stadiu pun o bariera pentru ca toate merge-urile aferente stadiului sa fie realizate
+inainte de a trece la urmatorul stadiu.
+
+Crearea matricii am lasat-o secventiala pentru ca nu consuma atat de mult timp pentru ca trebuie
+apelata doar o singura data. Singurul lucru variabil la crearea matricii este numarul de obiecte,
+cum numarul de obiecte ramane constant de la o iteratie de mergesort la alta, atunci matricea va
+ramane la fel de-a lungul intregului program.
+
+2. eficientizarea cmpfunc
+
+Dupa ce am facut un time profile pe aplicatie am vazut ca 60% din timp este folosit pe apelul cmpfunc.
+Am observat ca acesta calculeaza numarul de obiecte din rucsac la fiecare comparatie, desi numarul ar ramane
+neschimbat pentru fiecare individ pentru ca nici cromozomii nu se schimba in timpul sortarii. M-am gandit
+ca asemeni fitness, as putea stoca numarul de obiecte din rucsac intr-o variabila, pe care am denumit-o
+count, in interiorul structurii individual si sa o calculez in functia compute_fitness_function care
+oricum parcurgea cromozomii pentru fiecare individ. Eliminarea for-ului din cmp_func mi-a imbunatatit
+considerabil timpii de rulare, apelurile cmp_func reprezentand acum mai putin de 1% din timpul rularii.
+
+3. paralelizarea for-urilor
+
+Sunt multe for-uri ce pot fi paralelizate in run_genetic_algorithm. Dupa ce se identifica care sunt
+paralelizabile, acestea se paralizeaza usor calculand start-ul si end-ul for-ului unui thread pe baza
+dimensiunii for-ului total si id-ului thread-ului. Start-ul si end-ul le calculez folosind ceil, din
+aceasta cauza ultimul thread tinde sa aiba mai putine operatii de realizat. Asa ca il folosesc pe acesta
+pentru a efectua operatiile secventiale din thread_function.
+
+Primul for paralelizabil este cel ce creeaza generatia curenta si generatia urmatoarea pentru ca
+fiecare individ ocupa spatiu in memorie diferit asa ca modificarea indiviziilor diferiti este independenta.
+Urmatorul este cel din compute_fitness_function care asemeni for-ului anterior se ocupa doar de modificarea
+cate unui individ intr-o iteratie. Acelasi lucru se poate spune si despre for-ul ce modifica index-ul
+indivizilor din generatia curenta la final. Dupa toate aceste for-uri avem nevoie de bariera pentru ca trebuie
+ca toti indivizii sa fie modificati pentru a-i folosi ulterior la altceva, neavand cum sa stim spre exemplu
+ca desi nu toti au fost modificati, primii 30% au fost. De mentionat ca trebuie bariera si dupa mergesort
+pentru ca acesta modifica ordinea elementelor.
+
+Avem 4 for-uri la mijloc care ca idee fac acelasi lucru, muta generatiile din generatia curenta in generatia
+viitoare modificand sau nemodificand indivizii inainte. Faptul ca la fiecare iteratie acestea citesc indivizi
+diferiti si scriu in next_generation pe pozitii diferite le face paralelizabile. Intre ele nu a fost nevoie sa
+pun bariere pentru ca citesc din parti diferite din current_generation si scriu in parti diferite in next_generation.
+Primul se ocupa de primii 30% din indivizi, al doilea de urmatorii 20%, al treilea de urmatorii 20% si al patrulea
+de ultimii 30%.
+
+4. partile secventiale din thread_id
+
+Sunt cateva parti secventiale in thread_function care sunt procesate de ultimul thread. Primul este
+cel care se ocupa ca ultimul individ ramas pe dinafara(daca acesta exista) sa fie copiat asa cum e in
+next_generation. Fiind doar un individ care trebuie copiat, nu avem ce paraleliza asa ca punem doar un
+thread sa se ocupe de acest lucru. Si cum individul respectiv nu a fost procesat in niciunul din cele
+4 for-uri, atunci operatia nu are nevoie de bariera inainte sau dupa ea.
+
+Al doilea este interschimbarea generatiilor care reprezinta un singur set diferit de operatii care ar
+trebui facut doar o data. Se pune bariera dupa interschimbare pentru ca current_generation este folosit ulterior.
+Generatia curenta si viitoare sunt stocate intr-un pointer(individual**) fix pentru aceasta interschimbare
+care trebuie realizata pe un singur thread astfel incat toate thread-urile sa vada modificarea.
+Pointerii fiind alocati dinamic, acestia vor fi vazuti de pe toate thread-urile pentru ca este un singur
+heap. Daca pointerii erau alocati local modificarea ar fi fost vazuta doar de ultimul thread pentru
+ca variabilele locale sunt stocate pe stiva si fiecare thread are propria stiva.
+
+Mai raman doua apeluri de print_best_fitness(), functia trebuie apelata de pe un singur thread pentru ca
+vrem sa avem doar o afisare per apel. Dupa apelul de la final de for punem o bariera pentru ca vrem sa afisam
+inainte sa se apeleze compute_fitness_function() in iteratia urmatoare. Dupa apelul de dupa for nu avem nevoie
+de bariera pentru ca acesta se afla la finalul functiei thread_function si oricum se va astepta cu thread.join() ca
+toate thread-urile sa se termine inainte sa se faca ceva in main thread.

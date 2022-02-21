@@ -1,0 +1,1 @@
+/usr/bin/cc -g CMakeFiles/sol.dir/genetic_algorithm.c.o CMakeFiles/sol.dir/tema1.c.o -o sol  -pthread -lm 

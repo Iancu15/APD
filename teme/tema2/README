@@ -1,0 +1,79 @@
+In implementare folosesc modelul replicated workers prin intermediul ExecutorService. Paradigma
+Map-Reduce are 2 tipuri de task-uri diferite, unul de map si unul de reduce. Asa ca a trebuit
+sa creez cate o clasa pentru fiecare task. TaskMap primeste path-ul fisierului, offset-ul
+de la care incepe fragmentul in fisier si dimensiunea fragmentului. Am decis sa deleg
+citirea si ajustarea fragmentului catre task pentru a incapsula implementarea si pentru ca
+astfel operatiile de ajustare a fragmentelor ar fi executate in paralel. Dupa ce se ajusteaza
+fragmentul, se creeaza map-ul si lista de cuvinte maximale locale pe care le returneaza printr-un
+obiect IntermediateOutput ce reprezinta datele intermediare rezultate ce urmeaza a fi folosite de
+catre task-urile de reduce.
+
+TaskReduce primeste path-ul fisierului, lista de map-uri partiale si lista de liste de cuvinte
+maximale ce au fost procesate de task-urile map aferente fisierului respectiv. Combina rezultatele
+pentru a crea o lista finala de cuvinte maximale globale si un map ce incorporeaza toate map-uri
+partiale ale fragmentelor. In partea de procesare stocheaza numarul de elemente maximale globale
+si dimensiunea acestora, calculeaza bucata din sirul fibonacci ce va fi necesara in formula
+si aplica formula pe map-ul fisierului. La finalul apelului returneaza numarul de cuvinte
+maximale globale, lungimea cuvintelor maximale globale si path-ul si rangul fisierului.
+
+Am generalizat implementarea paralela a MapReduce in clasa cu acelasi nume. Aceasta se foloseste
+de generics pentru generalizare si fiecare implementare specifica de MapReduce trebuie sa aiba
+o clasa pentru output-ul intermediar(IO) si pentru output-ul final(O). Numarul de workers/thread-uri
+ce sunt folosite in cadrul rularii este ceva general asa ca va apartine implementarii oricarui fel
+de MapReduce. Pentru executarea implementarii MapReduce se foloseste metoda execute() ce va intoarce
+o lista de output-uri. In spatele acestei metode se afla un ExecutorService ce creeaza un pool
+fix de workeri ce a fost specificat in constructorul clasei MapReduce.
+
+Se creeaza task-urile de tip map care vor fi de tip Callable<IO> pentru ca acestea trebuie
+sa intoarca un obiect cu datele intermediare. Apoi sunt invocate task-urile create si la finalizarea
+rularii paralele a acestora se va crea o lista de Future<IO> ce va fi folosita mai apoi pentru
+crearea task-urilor de tip reduce. Task-urile de tip reduce trebuie sa fie de tip Callable<O> pentru
+ca au de intors un obiect cu datele finale. Dupa invocarea acestora va fi createa o lista de Future<O>.
+Pentru ca in general sunt mai putine task-uri de tip reduce decat de map si astfel mai putine output-uri
+decat output-uri intermediare mi-am permis sa mapez List<Future<O>> intr-un List<O> pentru a-l returna,
+incapsuland astfel partea paralela a MapReduce de exterior.
+
+Metodele createMapTasks() si createReduceTasks(List<Future<IO>> intermediateOs) sunt abstracte pentru
+ca acestea difera de la implementare la implementare. Ce se doreste a se delega catre task-urile de
+map si in ce fel este la latitudinea problemei si programatorului, acelasi lucru cand vine vorba de
+cum se grupeaza datele intermediare pentru a crea niste date pentru fiecare task de reduce. Aceste
+specificatii sunt particulare si nu se pot generaliza, asa ca sunt delegate catre o clasa ce extinde
+MapReduce. Este obligatoriu ca aceasta clasa sa isi primeasca in constructor numarul de workers si
+recomandat sa isi primeasca tot astfel datele de intrare necesare pentru crearea task-urilor de tip map.
+Avand astfel nevoie doar sa implementeze metodele abstracte.
+
+Revenind la particularitatea creeri task-urilor. Spre exemplu, in cadrul problemei noastre task-urilor
+de map le este delegat cate un fragment, asa ca trebuie parcurse toate fisierele si apoi fiecare offset
+posibil din fragmentSize in fragmentSize. O alta implementare ar trebui sa parcurga doar o data un set
+de intrare, altul poate are nevoie de 3 for-uri imbricate, sunt lucruri specifice implementarii.
+Acelasi lucru la createa task-urilor de tip map care se grupeaza pe baza path-ului/denumirii fisierului,
+in alta implementare se putea grupa pe baza mai multor date din output-ul intermediar sau pe baza unor
+combinatii din acestea. Astea sunt probleme ce denota imposibilitatea generalizarii crearii de task-uri.
+O metoda ar fi ca o lista de date ce urmeaza a fi delegate task-urilor sa fie creata de programator
+si delegarea in sine sa fie generalizata, insa oricum clasele task-urilor de tip map si reduce sunt create
+de programator asa ca stratul de generalizare ar fi redundant.
+
+Crearea de task-uri in cadrul implementarii problemei nu este paralelizata. Motivul este lipsa operatiilor
+complexe din cadrul parcurgerilor ce sunt mai mult o jonglare de date. Durata acestor 2 metode ar trebui
+sa fie foarte mica comparativ cu rularea task-urilor luand in considerare ca task-urile fac lucruri mult
+mai complexe si dimensiunea parcurgerii este egala cu numarul de task-uri pe care ii genereaza. Acest
+lucru este eficient in situatiile in care operatiile din task-uri dureaza de cel putin P ori mai mult
+decat crearea task-ului. In cadrul implementarii mele pentru problema din tema acest lucru este respectat
+pentru P-uri care nu sunt extraordinar de mari. Spre exemplu, pentru rularea testului 4 cu 6 workeri
+(am 6 core-uri fizice pe laptop), execute() din MapReduce a durat mai putin de 1% din timp, acest timp
+include crearea de task-uri de map si reduce. Pe de alta parte, runWorker() a ocupat 53% de timp si
+start_thread 34%. Asa ca in cazul problemei mele paralelizarea crearii de task-uri sunt sanse sa
+dureze mai mult din cauza crearii de thread-uri. Motivul pentru care dureaza asa putin este pentru ca
+am delegat toate operatiile complexe catre task-uri, cum ar fi ajustarea fragmentelor la map. Este
+recomandat ca cine implementeaza o varianta de MapReduce folosind aceasta interfata sa isi delege
+toate opreatiile complexe catre task-uri. Altfel, daca ii este greu sa faca acest lucru, sa isi
+paralelizeze parcurgerile pentru crearile de task-uri daca overhead-ul de la start_thread nu dureaza
+mai mult decat rularea operatiilor.
+
+Dupa ce programatorul si-a creat clasele IntermediateOutput, Output, TaskMap, TaskReduce si MapReduceImpl
+cu denumirea asta sau alta denumire, poate sa se foloseasca de propria implementare de MapReduce in
+cadrul propriului program. Isi creeaza o instanta de MapReduceImpl folosind constructorul creat
+cu datele de intrare aferente si numarul de workeri. Apoi poate executa implementarea cu .execute()
+si sa-si stocheze lista de valori de output intr-o variabila. Functia execute() poate sa arunce
+InterruptedException sau ExecutionException, acestea ar trebui interceptate de programator intr-un
+try-catch.

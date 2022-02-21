@@ -1,0 +1,34 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/alex/Desktop/an 3/sem 1/APD/tema1/sol/genetic_algorithm.c
+stdio.h
+-
+string.h
+-
+stdlib.h
+-
+math.h
+-
+search.h
+-
+genetic_algorithm.h
+/home/alex/Desktop/an 3/sem 1/APD/tema1/sol/genetic_algorithm.h
+
+/home/alex/Desktop/an 3/sem 1/APD/tema1/sol/genetic_algorithm.h
+sack_object.h
+/home/alex/Desktop/an 3/sem 1/APD/tema1/sol/sack_object.h
+individual.h
+/home/alex/Desktop/an 3/sem 1/APD/tema1/sol/individual.h
+pthread.h
+/home/alex/Desktop/an 3/sem 1/APD/tema1/sol/pthread.h
+
+/home/alex/Desktop/an 3/sem 1/APD/tema1/sol/individual.h
+
+/home/alex/Desktop/an 3/sem 1/APD/tema1/sol/sack_object.h
+

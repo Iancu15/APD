@@ -1,0 +1,3 @@
+/home/alex/Desktop/an 3/sem 1/APD/tema1/sol/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/home/alex/Desktop/an 3/sem 1/APD/tema1/sol/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/alex/Desktop/an 3/sem 1/APD/tema1/sol/cmake-build-debug/CMakeFiles/sol.dir

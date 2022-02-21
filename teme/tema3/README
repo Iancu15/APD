@@ -1,0 +1,69 @@
+Se incepe cu citirea fisierelor de fiecare coordonator, ca mai apoi acestia sa-si
+informeze workerii de rang-ul lor(al coordonatorilor).
+
+1. Topologie
+
+Coordonatorii isi trimit intre ei numarul de workeri pe care ii au in
+subordine ca mai apoi fiecare sa-si informeze workerii lor legat de cati
+workeri sunt in fiecare cluster. Acum fiecare proces cunoaste numarul de workeri
+din fiecare cluster si isi poate crea un datatype pentru fiecare cluster de
+dimensiunea clusterului respectiv pentru a retine in acesta rang-ul proceselor
+worker din cluster.
+
+Acum ca datatype-urile cu care se va comunica sunt cunoscute de toti, se vor
+trimite vectorii de worker intai intre coordonatori. Dupa ce primesc
+vectorii de la ceilalti coordonatori vor afisa topologia. Urmeaza
+sa trimita vectorii catre workerii subordonati ca mai apoi acestia
+sa afiseze topologia.
+
+2. Calcularea vectorului
+
+Coordonatorul 0 creeaza vectorul si calculeaza echilibrat cate iteratii
+sunt repartizate per cluster. Intai imparte exact numarul de iteratii
+la numarul total de workeri din toate cele 3 clustere pentru a afla
+numarul mediu de iteratii per worker. Apoi imparte iteratiile fiecarui
+coordonator proportional cu cati workeri are in subordine.
+Totusi nu se vor imparti exact, va ramane un rest de iteratii
+mai mic decat numarul total de workeri. Acele iteratii vor fi impartite
+cate 1 catre fiecare worker disponibil incepand de la cluster-ul 0
+pana la cluster-ul 2 pana sunt consumate.
+
+Ex pentru test-ul 4:
+
+24 de iteratii
+5 workeri in total => 24/5 = 4 iteratii per worker
+cluster-ul 0 are 1 worker => 4 * 1 = 4 iteratii
+cluster-ul 1 are 1 worker => 4 * 1 = 4 iteratii
+cluster-ul 2 are 3 workeri => 4 * 3 = 12 iteratii
+24 - (4 + 4 + 12) = 24 - 20 = 4 iteratii rest
+dam o iteratie worker-ului din cluster-ul 0, raman 3, cluster-ul 0 are 5 iteratii
+dam o iteratie worker-ului din cluster-ul 1, raman 2, cluster-ul 1 are 5 iteratii
+restul care au ramas sunt date catre 2 workeri din cluster-ul 2, cluster-ul 2 are 14 iteratii
+
+Astfel iteratiile ajung impartite cat mai echilibrat posibil. Cluster-ul 2 stie doar ca
+are de dat 2 iteratii rest catre 2 workeri, decide acesta care.
+
+In cazul oricarui input vor fi 2 tipuri de workeri. Unul care accepta rest si asa
+are numarul de iteratii per worker + 1 iteratii (in exemplu 5 iteratii) si altul care nu accepta
+rest si are numarul de iteratii per worker iteratii (in exemplu 4 iteratii). Asa ca dau commit la
+cate un vector pentru fiecare lungime si le voi folosi apoi pentru comunicatie.
+
+Coordonatorul 0 dupa ce a impartit echilibrat numarul de workeri, trimite coordonatorilor 1
+si 2 numarul de iteratii pe care le au pentru a-si crea proprii vectori si a da commit la
+tipul de date ca mai apoi coordonatorul 0 sa le trimita vectorii propriu-zisi.
+
+Apoi toti coordonatorii trimit vectorul asignat fiecarui worker. Fiecare coordonator
+isi calculeaza cate iteratii rest are ca mai apoi pentru n numarul de iteratii rest,
+sa trimita primilor n workeri o iteratie in plus. Workerii isi primesc vectorul,
+dubleaza elementele din acesta si il trimit inapoi coordonatorilor. Coordonatorii 1
+si 2 trimit vectorii dublati ai clusterelor lor catre coordonatorul 0 (si coordonatorul
+0 si-a primit vectorii dublati pentru clusterul lui). Cluster-ul 0 afiseaza apoi
+vectorul dublat in terminal.
+
+3. Bonus
+
+Tot ce am facut a fost sa folosesc coordonatorul 2 ca intermediar intre coordonatorii
+0 si 1 in cazul in care am eroare. Daca coordonatorul 1 are ceva de trimis catre 0,
+atunci acesta ii trimite lui 2 ca mai apoi 2 sa ii trimita lui 0. Daca coordonatorul
+0 are ceva de trimis lui 1, atunci acesta ii trimite lui 2 ca mai apoi 2 sa ii trimita
+lui 1.
