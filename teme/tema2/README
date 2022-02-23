@@ -28,7 +28,7 @@ Se creeaza task-urile de tip map care vor fi de tip Callable<IO> pentru ca acest
 sa intoarca un obiect cu datele intermediare. Apoi sunt invocate task-urile create si la finalizarea
 rularii paralele a acestora se va crea o lista de Future<IO> ce va fi folosita mai apoi pentru
 crearea task-urilor de tip reduce. Task-urile de tip reduce trebuie sa fie de tip Callable<O> pentru
-ca au de intors un obiect cu datele finale. Dupa invocarea acestora va fi createa o lista de Future<O>.
+ca au de intors un obiect cu datele finale. Dupa invocarea acestora va fi creata o lista de Future<O>.
 Pentru ca in general sunt mai putine task-uri de tip reduce decat de map si astfel mai putine output-uri
 decat output-uri intermediare mi-am permis sa mapez List<Future<O>> intr-un List<O> pentru a-l returna,
 incapsuland astfel partea paralela a MapReduce de exterior.
@@ -49,14 +49,14 @@ de intrare, altul poate are nevoie de 3 for-uri imbricate, sunt lucruri specific
 Acelasi lucru la createa task-urilor de tip map care se grupeaza pe baza path-ului/denumirii fisierului,
 in alta implementare se putea grupa pe baza mai multor date din output-ul intermediar sau pe baza unor
 combinatii din acestea. Astea sunt probleme ce denota imposibilitatea generalizarii crearii de task-uri.
-O metoda ar fi ca o lista de date ce urmeaza a fi delegate task-urilor sa fie creata de programator
+O metoda ar fi ca o lista de date ce urmeaza a fi delegata task-urilor sa fie creata de programator
 si delegarea in sine sa fie generalizata, insa oricum clasele task-urilor de tip map si reduce sunt create
 de programator asa ca stratul de generalizare ar fi redundant.
 
 Crearea de task-uri in cadrul implementarii problemei nu este paralelizata. Motivul este lipsa operatiilor
 complexe din cadrul parcurgerilor ce sunt mai mult o jonglare de date. Durata acestor 2 metode ar trebui
 sa fie foarte mica comparativ cu rularea task-urilor luand in considerare ca task-urile fac lucruri mult
-mai complexe si dimensiunea parcurgerii este egala cu numarul de task-uri pe care ii genereaza. Acest
+mai complexe si dimensiunea parcurgerii este egala cu numarul de task-uri generate de aceasta. Acest
 lucru este eficient in situatiile in care operatiile din task-uri dureaza de cel putin P ori mai mult
 decat crearea task-ului. In cadrul implementarii mele pentru problema din tema acest lucru este respectat
 pentru P-uri care nu sunt extraordinar de mari. Spre exemplu, pentru rularea testului 4 cu 6 workeri
